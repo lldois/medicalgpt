@@ -1,0 +1,15 @@
+accelerate>=0.34.0
+datasets>=2.14.6
+loguru
+peft>=0.14.0
+sentencepiece
+scikit-learn
+tensorboard
+tqdm>=4.47.0
+transformers>=4.49.0
+trl>=0.15.2
+wandb
+huggingface-hub>=0.20.0
+torch>=2.1.0
+# bitsandbytes>=0.41.0  # uncomment on GPU machines
+# flash-attn>=2.3.0     # uncomment on GPU machines with CUDA
