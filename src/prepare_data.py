@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Download and prepare datasets for the full RLHF pipeline.
+Download and prepare datasets for the Medical RLHF pipeline.
 
-SFT: HuggingFaceH4/ultrachat_200k (high-quality multi-turn conversations)
-Reward/PPO: Anthropic/hh-rlhf (human preference data)
+SFT: lavita/ChatDoctor-HealthCareMagic-100k (medical patient-doctor conversations)
+Reward/PPO: Anthropic/hh-rlhf (human preference data for safety alignment)
+Eval: Hold-out from ChatDoctor for perplexity computation
 
 All data is converted to the formats expected by the training scripts:
 - SFT: {"conversations": [{"from": "human", "value": "..."}, {"from": "gpt", "value": "..."}]}
@@ -19,43 +20,46 @@ from loguru import logger
 
 def prepare_sft_data(output_dir: str, max_samples: int = 10000, seed: int = 42):
     """
-    Download and convert UltraChat 200k to ShareGPT format.
+    Download and convert ChatDoctor-HealthCareMagic medical dialogues to ShareGPT format.
     """
     from datasets import load_dataset
 
-    logger.info(f"Loading HuggingFaceH4/ultrachat_200k (max_samples={max_samples})...")
-    ds = load_dataset("HuggingFaceH4/ultrachat_200k", split="train_sft")
+    logger.info(
+        f"Loading lavita/ChatDoctor-HealthCareMagic-100k (max_samples={max_samples})..."
+    )
+    ds = load_dataset("lavita/ChatDoctor-HealthCareMagic-100k", split="train")
     ds = ds.shuffle(seed=seed).select(range(min(max_samples, len(ds))))
 
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "ultrachat_sft.jsonl")
+    output_path = os.path.join(output_dir, "medical_sft.jsonl")
 
     count = 0
     with open(output_path, "w", encoding="utf-8") as f:
         for example in ds:
-            messages = example.get("messages", [])
-            if len(messages) < 2:
+            # ChatDoctor format: instruction (patient question) + input (context) + output (doctor response)
+            instruction = (example.get("instruction") or "").strip()
+            input_text = (example.get("input") or "").strip()
+            output_text = (example.get("output") or "").strip()
+
+            if not instruction or not output_text:
                 continue
 
-            conversations = []
-            for msg in messages:
-                role = msg.get("role", "")
-                content = msg.get("content", "").strip()
-                if not content:
-                    continue
-                if role == "user":
-                    conversations.append({"from": "human", "value": content})
-                elif role == "assistant":
-                    conversations.append({"from": "gpt", "value": content})
+            # Combine instruction and input as the patient query
+            patient_query = instruction
+            if input_text:
+                patient_query = f"{instruction}\n{input_text}"
 
-            if len(conversations) >= 2 and conversations[0]["from"] == "human":
-                f.write(
-                    json.dumps({"conversations": conversations}, ensure_ascii=False)
-                    + "\n"
-                )
-                count += 1
+            conversations = [
+                {"from": "human", "value": patient_query},
+                {"from": "gpt", "value": output_text},
+            ]
 
-    logger.info(f"SFT data saved: {output_path} ({count} samples)")
+            f.write(
+                json.dumps({"conversations": conversations}, ensure_ascii=False) + "\n"
+            )
+            count += 1
+
+    logger.info(f"Medical SFT data saved: {output_path} ({count} samples)")
     return output_path
 
 
@@ -137,60 +141,71 @@ def prepare_reward_data(output_dir: str, max_samples: int = 5000, seed: int = 42
 
 def prepare_eval_data(output_dir: str, max_samples: int = 200, seed: int = 42):
     """
-    Download eval data from UltraChat test split.
+    Download eval data from ChatDoctor (hold-out portion, different seed for separation).
     """
     from datasets import load_dataset
 
-    logger.info(f"Loading eval data (max_samples={max_samples})...")
-    ds = load_dataset("HuggingFaceH4/ultrachat_200k", split="test_sft")
-    ds = ds.shuffle(seed=seed).select(range(min(max_samples, len(ds))))
+    logger.info(f"Loading medical eval data (max_samples={max_samples})...")
+    ds = load_dataset("lavita/ChatDoctor-HealthCareMagic-100k", split="train")
+    # Use a different seed offset to get different samples from the SFT set
+    ds = ds.shuffle(seed=seed + 1000)
+    # Skip first 10000 (reserved for SFT) then take eval samples
+    start_idx = min(10000, len(ds) - max_samples)
+    ds = ds.select(range(start_idx, min(start_idx + max_samples, len(ds))))
 
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "ultrachat_eval.jsonl")
+    output_path = os.path.join(output_dir, "medical_eval.jsonl")
 
     count = 0
     with open(output_path, "w", encoding="utf-8") as f:
         for example in ds:
-            messages = example.get("messages", [])
-            if len(messages) < 2:
+            instruction = (example.get("instruction") or "").strip()
+            input_text = (example.get("input") or "").strip()
+            output_text = (example.get("output") or "").strip()
+
+            if not instruction or not output_text:
                 continue
 
-            conversations = []
-            for msg in messages:
-                role = msg.get("role", "")
-                content = msg.get("content", "").strip()
-                if not content:
-                    continue
-                if role == "user":
-                    conversations.append({"from": "human", "value": content})
-                elif role == "assistant":
-                    conversations.append({"from": "gpt", "value": content})
+            patient_query = instruction
+            if input_text:
+                patient_query = f"{instruction}\n{input_text}"
 
-            if len(conversations) >= 2 and conversations[0]["from"] == "human":
-                f.write(
-                    json.dumps({"conversations": conversations}, ensure_ascii=False)
-                    + "\n"
-                )
-                count += 1
+            conversations = [
+                {"from": "human", "value": patient_query},
+                {"from": "gpt", "value": output_text},
+            ]
 
-    logger.info(f"Eval data saved: {output_path} ({count} samples)")
+            f.write(
+                json.dumps({"conversations": conversations}, ensure_ascii=False) + "\n"
+            )
+            count += 1
+
+    logger.info(f"Medical eval data saved: {output_path} ({count} samples)")
     return output_path
 
 
 def prepare_minimal_test_data(base_dir: str):
     """
-    Create tiny datasets for CPU debugging (5 samples each).
+    Create tiny medical datasets for CPU debugging (5 samples each).
     """
+    medical_qa = [
+        ("What are the common symptoms of a cold?", "Common symptoms include runny nose, sore throat, cough, sneezing, mild body aches, and low-grade fever."),
+        ("How should I treat a minor burn?", "For minor burns, run cool water over the area for 10-15 minutes, apply aloe vera or burn cream, and cover with a sterile bandage."),
+        ("What causes high blood pressure?", "High blood pressure can be caused by obesity, high salt intake, lack of exercise, stress, genetics, and chronic kidney disease."),
+        ("When should I see a doctor for a headache?", "See a doctor if headaches are severe, frequent, accompanied by vision changes, or not relieved by over-the-counter medication."),
+        ("What foods help lower cholesterol?", "Foods that help lower cholesterol include oats, nuts, fatty fish, olive oil, beans, and fruits rich in soluble fiber."),
+    ]
+
     # SFT
     sft_dir = os.path.join(base_dir, "finetune")
     os.makedirs(sft_dir, exist_ok=True)
     sft_path = os.path.join(sft_dir, "test_sft.jsonl")
     with open(sft_path, "w", encoding="utf-8") as f:
-        for i in range(5):
+        for q, a in medical_qa:
             record = {
                 "conversations": [
-                    {"from": "human", "value": f"What is {i+1} + {i+1}?"},
-                    {"from": "gpt", "value": f"The answer is {(i+1)*2}."},
+                    {"from": "human", "value": q},
+                    {"from": "gpt", "value": a},
                 ]
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -200,13 +215,13 @@ def prepare_minimal_test_data(base_dir: str):
     os.makedirs(reward_dir, exist_ok=True)
     reward_path = os.path.join(reward_dir, "test_reward.jsonl")
     with open(reward_path, "w", encoding="utf-8") as f:
-        for i in range(5):
+        for q, a in medical_qa:
             record = {
                 "system": "",
                 "history": [],
-                "question": f"What is {i+1} + {i+1}?",
-                "response_chosen": f"The answer is {(i+1)*2}.",
-                "response_rejected": f"I don't know the answer.",
+                "question": q,
+                "response_chosen": a,
+                "response_rejected": "I'm not sure, you should ask someone else.",
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -215,16 +230,16 @@ def prepare_minimal_test_data(base_dir: str):
     os.makedirs(eval_dir, exist_ok=True)
     eval_path = os.path.join(eval_dir, "test_eval.jsonl")
     with open(eval_path, "w", encoding="utf-8") as f:
-        for i in range(5):
+        for q, a in medical_qa:
             record = {
                 "conversations": [
-                    {"from": "human", "value": f"Explain what {i+1} * {i+2} equals."},
-                    {"from": "gpt", "value": f"{i+1} * {i+2} = {(i+1)*(i+2)}."},
+                    {"from": "human", "value": q},
+                    {"from": "gpt", "value": a},
                 ]
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-    logger.info(f"Minimal test data created in {base_dir}")
+    logger.info(f"Minimal medical test data created in {base_dir}")
 
 
 if __name__ == "__main__":

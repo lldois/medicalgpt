@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # Stage 3: PPO Training (RLHF)
-# Align SFT model using reward model via PPO
+# Align medical SFT model using reward model via PPO for safety
 # Expected time: ~4-5 hours on A100 40GB
 # ==============================================================================
 set -e

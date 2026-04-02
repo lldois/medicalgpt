@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # Stage 1: Supervised Fine-Tuning (SFT)
-# Model: Qwen2.5-3B → LoRA fine-tuning on instruction data
+# Model: Qwen2.5-3B → LoRA fine-tuning on medical dialogue data (ChatDoctor)
 # Expected time: ~3-4 hours on A100 40GB
 # ==============================================================================
 set -e

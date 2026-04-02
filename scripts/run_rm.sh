@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # Stage 2: Reward Model Training
-# Train reward model on preference data (pairwise ranking)
+# Train reward model on preference data for safety alignment (pairwise ranking)
 # Expected time: ~2 hours on A100 40GB
 # ==============================================================================
 set -e

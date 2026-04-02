@@ -149,11 +149,21 @@ def main():
     # 2. Sample generation
     logger.info("Generating sample responses...")
     sample_prompts = [
+        # 常见疾病问诊
         "What are the common symptoms of diabetes?",
-        "Explain the difference between Type 1 and Type 2 diabetes.",
         "What is the recommended treatment for high blood pressure?",
-        "How does the immune system fight infections?",
+        # 鉴别诊断
+        "Explain the difference between Type 1 and Type 2 diabetes.",
+        "How can I tell if my chest pain is from heart disease or muscle strain?",
+        # 药物咨询
         "What are the side effects of aspirin?",
+        "Can I take ibuprofen and acetaminophen together?",
+        # 预防保健
+        "How does the immune system fight infections?",
+        "What lifestyle changes can help prevent cardiovascular disease?",
+        # 急症处理
+        "What should I do if someone is having a stroke?",
+        "How to perform basic first aid for a severe allergic reaction?",
     ]
     samples = generate_samples(
         model,

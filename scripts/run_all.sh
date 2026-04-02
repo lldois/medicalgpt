@@ -11,7 +11,7 @@
 set -e
 
 echo "============================================"
-echo "  MedicalGPT Full RLHF Training Pipeline"
+echo "  MedicalGPT - Medical RLHF Training Pipeline"
 echo "============================================"
 echo ""
 echo "HF_USERNAME: ${HF_USERNAME:-NOT SET}"
