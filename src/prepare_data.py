@@ -49,7 +49,10 @@ def prepare_sft_data(output_dir: str, max_samples: int = 10000, seed: int = 42):
                     conversations.append({"from": "gpt", "value": content})
 
             if len(conversations) >= 2 and conversations[0]["from"] == "human":
-                f.write(json.dumps({"conversations": conversations}, ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps({"conversations": conversations}, ensure_ascii=False)
+                    + "\n"
+                )
                 count += 1
 
     logger.info(f"SFT data saved: {output_path} ({count} samples)")
@@ -88,7 +91,11 @@ def prepare_reward_data(output_dir: str, max_samples: int = 5000, seed: int = 42
             q = question_parts[i].strip()
             # Find corresponding assistant response
             if i - 1 < len(parts) - 1:
-                a = parts[i].split("\n\nHuman:")[0].strip() if "\n\nHuman:" in parts[i] else parts[i].strip()
+                a = (
+                    parts[i].split("\n\nHuman:")[0].strip()
+                    if "\n\nHuman:" in parts[i]
+                    else parts[i].strip()
+                )
                 if q and a:
                     history.append([q, a])
 
@@ -160,7 +167,10 @@ def prepare_eval_data(output_dir: str, max_samples: int = 200, seed: int = 42):
                     conversations.append({"from": "gpt", "value": content})
 
             if len(conversations) >= 2 and conversations[0]["from"] == "human":
-                f.write(json.dumps({"conversations": conversations}, ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps({"conversations": conversations}, ensure_ascii=False)
+                    + "\n"
+                )
                 count += 1
 
     logger.info(f"Eval data saved: {output_path} ({count} samples)")
@@ -219,17 +229,25 @@ def prepare_minimal_test_data(base_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare datasets for RLHF pipeline")
-    parser.add_argument("--mode", type=str, default="all",
-                        choices=["all", "sft", "reward", "eval", "minimal"],
-                        help="Which data to prepare")
-    parser.add_argument("--data_dir", type=str, default="./data",
-                        help="Base data directory")
-    parser.add_argument("--sft_samples", type=int, default=10000,
-                        help="Number of SFT samples")
-    parser.add_argument("--reward_samples", type=int, default=5000,
-                        help="Number of reward samples")
-    parser.add_argument("--eval_samples", type=int, default=200,
-                        help="Number of eval samples")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="all",
+        choices=["all", "sft", "reward", "eval", "minimal"],
+        help="Which data to prepare",
+    )
+    parser.add_argument(
+        "--data_dir", type=str, default="./data", help="Base data directory"
+    )
+    parser.add_argument(
+        "--sft_samples", type=int, default=10000, help="Number of SFT samples"
+    )
+    parser.add_argument(
+        "--reward_samples", type=int, default=5000, help="Number of reward samples"
+    )
+    parser.add_argument(
+        "--eval_samples", type=int, default=200, help="Number of eval samples"
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -237,15 +255,24 @@ if __name__ == "__main__":
         prepare_minimal_test_data(args.data_dir)
 
     if args.mode in ["all", "sft"]:
-        prepare_sft_data(os.path.join(args.data_dir, "finetune"),
-                         max_samples=args.sft_samples, seed=args.seed)
+        prepare_sft_data(
+            os.path.join(args.data_dir, "finetune"),
+            max_samples=args.sft_samples,
+            seed=args.seed,
+        )
 
     if args.mode in ["all", "reward"]:
-        prepare_reward_data(os.path.join(args.data_dir, "reward"),
-                            max_samples=args.reward_samples, seed=args.seed)
+        prepare_reward_data(
+            os.path.join(args.data_dir, "reward"),
+            max_samples=args.reward_samples,
+            seed=args.seed,
+        )
 
     if args.mode in ["all", "eval"]:
-        prepare_eval_data(os.path.join(args.data_dir, "eval"),
-                          max_samples=args.eval_samples, seed=args.seed)
+        prepare_eval_data(
+            os.path.join(args.data_dir, "eval"),
+            max_samples=args.eval_samples,
+            seed=args.seed,
+        )
 
     logger.info("Data preparation complete!")

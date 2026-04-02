@@ -139,7 +139,7 @@ When you change hyperparameters, the output directory and HF Hub repo name autom
 | Reward Model (LoRA) | ✅ | ✅ |
 | PPO (4 models) | ✅ (tight) | ✅ |
 
-## 技术要点 (面试参考)
+## 技术要点
 
 1. **SFT阶段**: 使用LoRA (rank=16) 对Qwen2.5-3B进行指令微调，训练数据为UltraChat多轮对话，使用ShareGPT格式
 2. **Reward Model**: 基于InstructGPT的pairwise logloss训练偏好排序模型: $L = -\log\sigma(r_{chosen} - r_{rejected})$

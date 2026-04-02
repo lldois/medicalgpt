@@ -50,6 +50,7 @@ def check_hf_checkpoint_exists(repo_id: str) -> bool:
     """Check if a checkpoint exists on HuggingFace Hub."""
     try:
         from huggingface_hub import repo_exists
+
         return repo_exists(repo_id, token=HF_TOKEN)
     except Exception as e:
         logger.warning(f"Could not check HF Hub for {repo_id}: {e}")
@@ -85,6 +86,7 @@ def download_checkpoint_from_hub(repo_id: str, local_dir: str) -> str | None:
 
     try:
         from huggingface_hub import snapshot_download
+
         logger.info(f"Downloading checkpoint from HF Hub: {repo_id} -> {local_dir}")
         snapshot_download(
             repo_id=repo_id,
@@ -98,7 +100,9 @@ def download_checkpoint_from_hub(repo_id: str, local_dir: str) -> str | None:
         return None
 
 
-def upload_checkpoint_to_hub(local_dir: str, repo_id: str, commit_message: str = "Upload checkpoint"):
+def upload_checkpoint_to_hub(
+    local_dir: str, repo_id: str, commit_message: str = "Upload checkpoint"
+):
     """Upload a checkpoint directory to HuggingFace Hub."""
     if not HF_TOKEN:
         logger.warning("HF_TOKEN not set, skipping upload to HuggingFace Hub")
@@ -106,6 +110,7 @@ def upload_checkpoint_to_hub(local_dir: str, repo_id: str, commit_message: str =
 
     try:
         from huggingface_hub import HfApi
+
         api = HfApi(token=HF_TOKEN)
 
         # Create repo if it doesn't exist
@@ -147,6 +152,7 @@ def setup_wandb(project_name: str, run_name: str):
     """Setup wandb if API key is available."""
     if WANDB_API_KEY:
         import wandb
+
         wandb.login(key=WANDB_API_KEY)
         logger.info(f"wandb initialized: project={project_name}, run={run_name}")
     else:

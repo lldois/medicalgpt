@@ -34,8 +34,12 @@ from trl import (
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from template import get_conv_template
 from utils import (
-    build_run_name, get_hf_repo_id, resolve_resume_checkpoint,
-    upload_checkpoint_to_hub, setup_wandb, save_hyperparams,
+    build_run_name,
+    get_hf_repo_id,
+    resolve_resume_checkpoint,
+    upload_checkpoint_to_hub,
+    setup_wandb,
+    save_hyperparams,
 )
 
 os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
@@ -63,7 +67,8 @@ def main():
     is_main_process = local_rank == 0
 
     run_name = build_run_name(
-        "ppo", model=training_args.sft_model_path,
+        "ppo",
+        model=training_args.sft_model_path,
         batch_size=training_args.per_device_train_batch_size,
     )
     repo_id = get_hf_repo_id(run_name)
@@ -80,9 +85,14 @@ def main():
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
-        training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code)
+        training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code
+    )
     if tokenizer.eos_token_id is None:
-        tokenizer.eos_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.sep_token
+        tokenizer.eos_token = (
+            tokenizer.eos_token
+            if tokenizer.eos_token is not None
+            else tokenizer.sep_token
+        )
         tokenizer.add_special_tokens({"eos_token": tokenizer.eos_token})
     if tokenizer.bos_token_id is None:
         tokenizer.add_special_tokens({"bos_token": tokenizer.eos_token})
@@ -95,37 +105,49 @@ def main():
 
     # Load models
     value_model = AutoModelForSequenceClassification.from_pretrained(
-        training_args.reward_model_path, trust_remote_code=model_args.trust_remote_code, num_labels=1)
+        training_args.reward_model_path,
+        trust_remote_code=model_args.trust_remote_code,
+        num_labels=1,
+    )
     reward_model = AutoModelForSequenceClassification.from_pretrained(
-        training_args.reward_model_path, trust_remote_code=model_args.trust_remote_code, num_labels=1)
+        training_args.reward_model_path,
+        trust_remote_code=model_args.trust_remote_code,
+        num_labels=1,
+    )
     policy = AutoModelForCausalLM.from_pretrained(
-        training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code)
+        training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code
+    )
 
     peft_config = get_peft_config(model_args)
     if peft_config is None:
         ref_policy = AutoModelForCausalLM.from_pretrained(
-            training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code)
+            training_args.sft_model_path, trust_remote_code=model_args.trust_remote_code
+        )
     else:
         ref_policy = None
 
     # Load datasets
     prompt_template = get_conv_template(args.template_name)
     if args.dataset_name is not None:
-        dataset = load_dataset(args.dataset_name, args.dataset_config, split=args.dataset_train_split)
+        dataset = load_dataset(
+            args.dataset_name, args.dataset_config, split=args.dataset_train_split
+        )
         eval_samples = 100
         train_dataset = dataset.select(range(len(dataset) - eval_samples))
         eval_dataset = dataset.select(range(len(dataset) - eval_samples, len(dataset)))
     else:
         data_files = {}
         if args.train_file_dir and os.path.exists(args.train_file_dir):
-            train_data_files = glob(f'{args.train_file_dir}/**/*.json', recursive=True) + \
-                               glob(f'{args.train_file_dir}/**/*.jsonl', recursive=True)
+            train_data_files = glob(
+                f"{args.train_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.train_file_dir}/**/*.jsonl", recursive=True)
             data_files["train"] = train_data_files
         if args.validation_file_dir and os.path.exists(args.validation_file_dir):
-            eval_data_files = glob(f'{args.validation_file_dir}/**/*.json', recursive=True) + \
-                              glob(f'{args.validation_file_dir}/**/*.jsonl', recursive=True)
+            eval_data_files = glob(
+                f"{args.validation_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.validation_file_dir}/**/*.jsonl", recursive=True)
             data_files["validation"] = eval_data_files
-        dataset = load_dataset('json', data_files=data_files)
+        dataset = load_dataset("json", data_files=data_files)
         train_dataset = dataset["train"]
         val_dataset = dataset["validation"]
         eval_dataset = val_dataset.select(range(min(100, len(val_dataset))))
@@ -141,7 +163,7 @@ def main():
 
         def get_dialog(examples):
             system_prompts = examples.get("system_prompt", "")
-            for i, source in enumerate(examples['conversations']):
+            for i, source in enumerate(examples["conversations"]):
                 if len(source) < 2:
                     continue
                 data_role = source[0].get("from", "")
@@ -158,9 +180,13 @@ def main():
                         messages.append(sentence["value"])
                 if len(messages) < 2 or len(messages) % 2 != 0:
                     continue
-                history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+                history_messages = [
+                    [messages[k], messages[k + 1]] for k in range(0, len(messages), 2)
+                ]
                 system_prompt = system_prompts[i] if system_prompts else None
-                yield prompt_template.get_dialog(history_messages, system_prompt=system_prompt)
+                yield prompt_template.get_dialog(
+                    history_messages, system_prompt=system_prompt
+                )
 
         for dialog in get_dialog(examples):
             for i in range(len(dialog) // 2):
@@ -170,15 +196,23 @@ def main():
         return new_examples
 
     if is_main_process:
-        tokenized_train = train_dataset.map(preprocess_function, batched=True,
+        tokenized_train = train_dataset.map(
+            preprocess_function,
+            batched=True,
             num_proc=training_args.dataset_num_proc,
-            remove_columns=train_dataset.column_names, load_from_cache_file=False)
-        train_dataset = tokenized_train.filter(lambda x: len(x['input_ids']) > 0)
+            remove_columns=train_dataset.column_names,
+            load_from_cache_file=False,
+        )
+        train_dataset = tokenized_train.filter(lambda x: len(x["input_ids"]) > 0)
 
-        tokenized_eval = eval_dataset.map(preprocess_function, batched=True,
+        tokenized_eval = eval_dataset.map(
+            preprocess_function,
+            batched=True,
             num_proc=training_args.dataset_num_proc,
-            remove_columns=eval_dataset.column_names, load_from_cache_file=False)
-        eval_dataset = tokenized_eval.filter(lambda x: len(x['input_ids']) > 0)
+            remove_columns=eval_dataset.column_names,
+            load_from_cache_file=False,
+        )
+        eval_dataset = tokenized_eval.filter(lambda x: len(x["input_ids"]) > 0)
 
         logger.info(f"Tokenized: train={len(train_dataset)}, eval={len(eval_dataset)}")
 
@@ -197,17 +231,23 @@ def main():
     if training_args.do_train:
         if is_main_process:
             logger.info("*** PPO Train ***")
-            save_hyperparams(training_args.output_dir,
-                stage="ppo", sft_model=training_args.sft_model_path,
+            save_hyperparams(
+                training_args.output_dir,
+                stage="ppo",
+                sft_model=training_args.sft_model_path,
                 reward_model=training_args.reward_model_path,
                 batch_size=training_args.per_device_train_batch_size,
-                run_name=run_name)
+                run_name=run_name,
+            )
         trainer.train()
 
         if is_main_process:
             trainer.save_model(training_args.output_dir)
-            upload_checkpoint_to_hub(training_args.output_dir, repo_id,
-                                    commit_message=f"Final PPO model: {run_name}")
+            upload_checkpoint_to_hub(
+                training_args.output_dir,
+                repo_id,
+                commit_message=f"Final PPO model: {run_name}",
+            )
 
     trainer.generate_completions()
 

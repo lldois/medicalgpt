@@ -6,7 +6,7 @@ Chat prompt templates for different model families.
 from dataclasses import dataclass
 from typing import Optional, List, Sequence, Dict
 
-__all__ = ['Conversation', 'register_conv_template', 'get_conv_template']
+__all__ = ["Conversation", "register_conv_template", "get_conv_template"]
 
 
 @dataclass
@@ -20,23 +20,23 @@ class Conversation:
     stop_str: Optional[str] = "</s>"
 
     def get_prompt(
-            self,
-            messages: Optional[List[Sequence[str]]] = None,
-            system_prompt: Optional[str] = ""
+        self,
+        messages: Optional[List[Sequence[str]]] = None,
+        system_prompt: Optional[str] = "",
     ) -> str:
         return "".join(self._format_example(messages, system_prompt))
 
     def get_dialog(
-            self,
-            messages: Optional[List[Sequence[str]]] = None,
-            system_prompt: Optional[str] = ""
+        self,
+        messages: Optional[List[Sequence[str]]] = None,
+        system_prompt: Optional[str] = "",
     ) -> List[str]:
         return self._format_example(messages, system_prompt)
 
     def _format_example(
-            self,
-            messages: Optional[List[Sequence[str]]] = None,
-            system_prompt: Optional[str] = ""
+        self,
+        messages: Optional[List[Sequence[str]]] = None,
+        system_prompt: Optional[str] = "",
     ) -> List[str]:
         system_prompt = system_prompt or self.system_prompt
         system_prompt = system_prompt + self.sep if system_prompt else ""
@@ -80,7 +80,7 @@ register_conv_template(
     Conversation(
         name="vicuna",
         system_prompt="A chat between a curious user and an artificial intelligence assistant. "
-                      "The assistant gives helpful, detailed, and polite answers to the user's questions.",
+        "The assistant gives helpful, detailed, and polite answers to the user's questions.",
         messages=[],
         roles=("USER", "ASSISTANT"),
         prompt="USER: {query} ASSISTANT:",

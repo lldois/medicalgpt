@@ -34,8 +34,9 @@ def compute_perplexity(model, tokenizer, eval_data, max_length=512, device="cuda
                 text += msg.get("value", "") + " "
             text = text.strip()
 
-            inputs = tokenizer(text, return_tensors="pt", truncation=True,
-                               max_length=max_length).to(device)
+            inputs = tokenizer(
+                text, return_tensors="pt", truncation=True, max_length=max_length
+            ).to(device)
             if inputs["input_ids"].shape[1] < 2:
                 continue
 
@@ -47,12 +48,14 @@ def compute_perplexity(model, tokenizer, eval_data, max_length=512, device="cuda
         return float("inf")
 
     import math
+
     avg_loss = total_loss / total_tokens
     return math.exp(avg_loss)
 
 
-def generate_samples(model, tokenizer, prompts, template_name="qwen",
-                     max_new_tokens=256, device="cuda"):
+def generate_samples(
+    model, tokenizer, prompts, template_name="qwen", max_new_tokens=256, device="cuda"
+):
     """Generate sample responses for qualitative evaluation."""
     model.eval()
     prompt_template = get_conv_template(template_name)
@@ -73,8 +76,9 @@ def generate_samples(model, tokenizer, prompts, template_name="qwen",
                 repetition_penalty=1.1,
             )
 
-        response = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:],
-                                    skip_special_tokens=True)
+        response = tokenizer.decode(
+            outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
+        )
         results.append({"prompt": prompt_text, "response": response})
 
     return results
@@ -82,12 +86,18 @@ def generate_samples(model, tokenizer, prompts, template_name="qwen",
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate RLHF model")
-    parser.add_argument("--model_path", type=str, required=True,
-                        help="Path to the model (merged or base + LoRA)")
-    parser.add_argument("--lora_path", type=str, default=None,
-                        help="Optional LoRA adapter path")
-    parser.add_argument("--eval_data", type=str, default=None,
-                        help="Path to eval JSONL file")
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        required=True,
+        help="Path to the model (merged or base + LoRA)",
+    )
+    parser.add_argument(
+        "--lora_path", type=str, default=None, help="Optional LoRA adapter path"
+    )
+    parser.add_argument(
+        "--eval_data", type=str, default=None, help="Path to eval JSONL file"
+    )
     parser.add_argument("--template_name", type=str, default="qwen")
     parser.add_argument("--max_length", type=int, default=512)
     parser.add_argument("--max_new_tokens", type=int, default=256)
@@ -102,11 +112,15 @@ def main():
     logger.info(f"Loading model from {args.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_path, torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32,
-        trust_remote_code=True, device_map="auto" if device == "cuda" else None)
+        args.model_path,
+        torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+        trust_remote_code=True,
+        device_map="auto" if device == "cuda" else None,
+    )
 
     if args.lora_path:
         from peft import PeftModel
+
         model = PeftModel.from_pretrained(model, args.lora_path)
         model = model.merge_and_unload()
 
@@ -126,8 +140,9 @@ def main():
                 if line:
                     eval_data.append(json.loads(line))
 
-        ppl = compute_perplexity(model, tokenizer, eval_data,
-                                 max_length=args.max_length, device=device)
+        ppl = compute_perplexity(
+            model, tokenizer, eval_data, max_length=args.max_length, device=device
+        )
         results["perplexity"] = ppl
         logger.info(f"Perplexity: {ppl:.4f}")
 
@@ -140,9 +155,14 @@ def main():
         "How does the immune system fight infections?",
         "What are the side effects of aspirin?",
     ]
-    samples = generate_samples(model, tokenizer, sample_prompts,
-                               template_name=args.template_name,
-                               max_new_tokens=args.max_new_tokens, device=device)
+    samples = generate_samples(
+        model,
+        tokenizer,
+        sample_prompts,
+        template_name=args.template_name,
+        max_new_tokens=args.max_new_tokens,
+        device=device,
+    )
     results["generated_samples"] = samples
 
     for s in samples:
