@@ -1,0 +1,5 @@
+{"system": "", "history": [], "question": "头痛应该怎么办？", "response_chosen": "头痛的原因较多，建议首先排除器质性病变。如果是紧张性头痛，可以通过休息、按摩来缓解。", "response_rejected": "吃点药就好了。"}
+{"system": "", "history": [], "question": "什么是高血压？", "response_chosen": "高血压是指动脉血压持续升高的慢性疾病，需要通过药物和生活方式调整进行治疗。", "response_rejected": "血压高一点没关系。"}
+{"system": "", "history": [], "question": "感冒了怎么办？", "response_chosen": "感冒多为病毒感染，注意休息、多饮水，可服用解热镇痛药缓解症状。", "response_rejected": "不用管它。"}
+{"system": "", "history": [], "question": "糖尿病有哪些症状？", "response_chosen": "糖尿病的典型症状为多饮、多食、多尿、体重减轻，即三多一少。", "response_rejected": "没什么症状。"}
+{"system": "", "history": [], "question": "孩子发烧怎么处理？", "response_chosen": "儿童发热时，先物理降温，体温超过38.5°C可口服退热药，持续高热应就医。", "response_rejected": "小孩发烧不用管。"}

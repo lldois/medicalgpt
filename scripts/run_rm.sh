@@ -24,8 +24,8 @@ SAVE_STEPS=500
 EVAL_STEPS=100
 
 # ============ Paths ============
-TRAIN_DIR="./data/reward"
-EVAL_DIR="./data/reward"
+TRAIN_DIR="./data/reward_converted"
+EVAL_DIR="./data/reward_converted"
 OUTPUT_DIR="outputs-rm-qwen2.5-3b-lr${LEARNING_RATE}-r${LORA_RANK}-a${LORA_ALPHA}-bs${BATCH_SIZE}-ep${NUM_EPOCHS}"
 
 # ============ Training ============

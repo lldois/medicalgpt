@@ -20,8 +20,8 @@ EVAL_STEPS=200
 # These should point to the MERGED SFT and RM models
 SFT_MODEL_PATH="./merged-sft"
 REWARD_MODEL_PATH="./merged-rm"
-TRAIN_DIR="./data/finetune"
-EVAL_DIR="./data/eval"
+TRAIN_DIR="./data/sft"
+EVAL_DIR="./data/sft"
 OUTPUT_DIR="outputs-ppo-qwen2.5-3b-bs${BATCH_SIZE}-ep${NUM_EPOCHS}"
 
 # ============ Training ============
