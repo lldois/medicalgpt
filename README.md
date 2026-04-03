@@ -219,8 +219,6 @@ MAX_LENGTH=2048        # 尝试：1024, 2048, 4096
 5. **LoRA**: 低秩适配器微调，将权重更新分解为 $\Delta W = BA$，其中 $B \in \mathbb{R}^{d \times r}, A \in \mathbb{R}^{r \times k}, r \ll \min(d,k)$，仅训练约0.5%的参数
 6. **评估体系**: 每阶段有针对性的评估指标 — 预训练看PPL，SFT看PPL+BLEU+ROUGE，RM看准确率，RLHF看Reward分数。BLEU/ROUGE 使用字符级实现，无额外依赖
 
-## 面试指南
-
 ### Q: 这个项目是做什么的？
 
 > "这是一个完整的医疗大模型对齐项目，实现了四阶段训练管道：继续预训练注入医学知识 → SFT学习问答风格 → 奖励模型学习偏好 → PPO强化对齐。使用 shibing624/medical 中文医疗数据集，将 Qwen2.5-3B 对齐为安全、准确的医疗对话助手。每个阶段都有对应的评估指标（PPL/BLEU/ROUGE/Accuracy/Reward）。"
